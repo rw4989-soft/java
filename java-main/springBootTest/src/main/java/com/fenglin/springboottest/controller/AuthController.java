@@ -2,7 +2,9 @@ package com.fenglin.springboottest.controller;
 
 import com.fenglin.springboottest.common.Result;
 import com.fenglin.springboottest.entity.User;
+import com.fenglin.springboottest.service.TokenService;
 import com.fenglin.springboottest.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -10,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -22,6 +25,9 @@ public class AuthController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private TokenService tokenService;
+
     /**
      * 连通性探测（前端可在控制台访问 /api/auth/health 验证后端是否在线）
      */
@@ -33,6 +39,7 @@ public class AuthController {
     /**
      * 登录
      * POST /api/auth/login  body: {"username": "...", "password": "..."}
+     * 成功时 data = { token, tokenType, expiresIn, username, nickname }
      */
     @PostMapping("/login")
     public Result<Map<String, Object>> login(@RequestBody Map<String, String> body) {
@@ -48,8 +55,16 @@ public class AuthController {
             return Result.error("痞老板偷不走密码，但你也输错啦！");
         }
 
-        return Result.success("🎉 登录成功！欢迎回来，" + user.getNickname() + "！",
-                Map.of("nickname", user.getNickname()));
+        String token = tokenService.issue(user.getId(), user.getUsername(), user.getNickname());
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("token", token);
+        data.put("tokenType", "Bearer");
+        data.put("expiresIn", tokenService.getExpireSeconds());
+        data.put("username", user.getUsername());
+        data.put("nickname", user.getNickname());
+
+        return Result.success("🎉 登录成功！欢迎回来，" + user.getNickname() + "！", data);
     }
 
     /**
@@ -82,5 +97,60 @@ public class AuthController {
 
         return Result.success("🎉 注册成功！欢迎入住菠萝屋隔壁！",
                 Map.of("nickname", user.getNickname()));
+    }
+
+    /**
+     * 校验当前 token 是否有效，顺便把昵称带回去
+     * GET /api/auth/me   Header: Authorization: Bearer &lt;token&gt;
+     */
+    @GetMapping("/me")
+    public Result<Map<String, Object>> me(HttpServletRequest request, jakarta.servlet.http.HttpServletResponse response) {
+        TokenService.Session session = currentSession(request);
+        if (session == null) {
+            response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
+            return unauthorized();
+        }
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("username", session.username());
+        data.put("nickname", session.nickname());
+
+        return Result.success("登录态有效 🔑", data);
+    }
+
+    /**
+     * 退出登录：让 token 立即失效
+     * POST /api/auth/logout   Header: Authorization: Bearer &lt;token&gt;
+     */
+    @PostMapping("/logout")
+    public Result<String> logout(HttpServletRequest request) {
+        String token = extractToken(request);
+        if (token == null) {
+            return unauthorized();
+        }
+        tokenService.revoke(token);
+        return Result.success("已上岸，下次再来 🏝️");
+    }
+
+    // ==================== 内部工具 ====================
+
+    /** 从请求头取 token（去掉 Bearer 前缀） */
+    private String extractToken(HttpServletRequest request) {
+        String header = request.getHeader("Authorization");
+        if (header != null && header.startsWith("Bearer ")) {
+            return header.substring(7).trim();
+        }
+        return null;
+    }
+
+    private TokenService.Session currentSession(HttpServletRequest request) {
+        return tokenService.verify(extractToken(request));
+    }
+
+    /** 401 统一返回 */
+    private <T> Result<T> unauthorized() {
+        Result<T> r = Result.error("登录状态已失效，请重新登录");
+        r.setCode(401);
+        return r;
     }
 }

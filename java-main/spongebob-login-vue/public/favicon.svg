@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#0b4a6f"/>
+  <ellipse cx="32" cy="46" rx="24" ry="5" fill="#7ee2ff" opacity=".22"/>
+  <!-- 面包底 -->
+  <path d="M12 42h40c1 0 2 1 2 2v2c0 3-2 5-5 5H15c-3 0-5-2-5-5v-2c0-1 1-2 2-2z" fill="#c98a45"/>
+  <!-- 肉饼 -->
+  <rect x="14" y="36" width="36" height="7" rx="3.5" fill="#5e3a1e"/>
+  <!-- 生菜 -->
+  <path d="M11 33h42l-2 4H13z" fill="#7cb342"/>
+  <!-- 芝士 -->
+  <path d="M13 29h38l-3 5h-6l-3-3-3 3h-6l-3-3-3 3h-6z" fill="#ffca28"/>
+  <!-- 面包顶 -->
+  <path d="M32 12c11 0 19 7 19 17 0 2-1 3-3 3H16c-2 0-3-1-3-3 0-10 8-17 19-17z" fill="#e8b06a"/>
+  <!-- 芝麻 -->
+  <circle cx="24" cy="22" r="1.6" fill="#fff5d6"/>
+  <circle cx="33" cy="19" r="1.6" fill="#fff5d6"/>
+  <circle cx="41" cy="24" r="1.6" fill="#fff5d6"/>
+  <circle cx="29" cy="27" r="1.6" fill="#fff5d6"/>
+  <circle cx="38" cy="28" r="1.6" fill="#fff5d6"/>
+</svg>

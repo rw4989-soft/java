@@ -30,6 +30,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { login } from '../api/auth.js'
+import { setSession, getUsername } from '../utils/auth.js'
 
 const props = defineProps({
   presetUsername: { type: String, default: '' },
@@ -46,7 +47,12 @@ const messageType = ref('')
 const loading = ref(false)
 
 onMounted(() => {
-  if (props.presetUsername) username.value = props.presetUsername
+  if (props.presetUsername) {
+    username.value = props.presetUsername
+  } else {
+    // 上次勾了「记住我」就自动填上
+    username.value = getUsername()
+  }
   if (props.flashMessage) {
     messageType.value = 'ok'
     message.value = props.flashMessage
@@ -69,11 +75,32 @@ async function handleLogin() {
   try {
     const r = await login(u, p)
     if (r.ok) {
+      // 后端返回 { token, tokenType, expiresIn, username, nickname }
+      const token = r.data?.token
+      if (!token) {
+        messageType.value = 'err'
+        message.value = '登录成功但后端没返回 token，请确认后端已是最新代码'
+        return
+      }
+
+      // 1) 存 token + 昵称，登录态交给 localStorage
+      setSession({
+        token,
+        nickname: r.data?.nickname || u,
+        username: r.data?.username || u
+      })
+
+      // 2) 记住我：勾了就留用户名方便下次自动填，不勾就清掉
+      if (remember.value) {
+        localStorage.setItem('sb_username', u)
+      } else {
+        localStorage.removeItem('sb_username')
+      }
+
       messageType.value = 'ok'
-      message.value = r.message
-      // 记住用户名 & 保存昵称，方便后续页面使用
-      if (remember.value) localStorage.setItem('sb_username', u)
-      localStorage.setItem('sb_nickname', r.data?.nickname || u)
+      message.value = '登录成功，正在进入比奇堡…'
+
+      // 3) 通知外层跳转（LoginView 里 push 到首页 / 原目标页）
       emit('logged-in', r.data?.nickname || u)
     } else {
       messageType.value = 'err'

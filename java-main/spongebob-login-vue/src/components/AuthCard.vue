@@ -24,14 +24,8 @@
     </p>
 
     <transition name="swap" mode="out-in">
-      <div v-if="loggedIn" key="welcome" class="welcome">
-        <div class="welcome-emoji">🍍🎉</div>
-        <h2>欢迎回来，{{ nickname }}！</h2>
-        <p>蟹黄堡秘方已解锁，去抓水母吧～</p>
-        <button class="btn" @click="handleLogout">退出登录</button>
-      </div>
       <LoginForm
-        v-else-if="tab === 'login'"
+        v-if="tab === 'login'"
         key="login"
         :preset-username="presetUsername"
         :flash-message="flashMessage"
@@ -55,8 +49,9 @@ import RegisterForm from './RegisterForm.vue'
 const tab = ref('login')
 const presetUsername = ref('')
 const flashMessage = ref('')
-const loggedIn = ref(false)
-const nickname = ref('')
+
+// 登录成功后交给父组件 App 切换到首页
+const emit = defineEmits(['logged-in'])
 
 function switchTab(target) {
   if (target === 'register') {
@@ -66,17 +61,8 @@ function switchTab(target) {
   tab.value = target
 }
 
-// 登录成功：展示欢迎页
 function handleLoggedIn(name) {
-  nickname.value = name
-  loggedIn.value = true
-}
-
-// 退出登录：回到登录页
-function handleLogout() {
-  localStorage.removeItem('sb_nickname')
-  loggedIn.value = false
-  tab.value = 'login'
+  emit('logged-in', name)
 }
 
 // 注册成功后切回登录表单，自动填好用户名并提示
@@ -159,19 +145,4 @@ h1 {
   opacity: 0;
   transform: translateX(-24px);
 }
-
-/* 登录成功欢迎页 */
-.welcome { text-align: center; padding: 16px 4px 8px; }
-.welcome-emoji { font-size: 56px; margin-bottom: 8px; }
-.welcome h2 { color: #f57f17; font-size: 22px; letter-spacing: 2px; margin-bottom: 10px; }
-.welcome p { color: #0288d1; font-size: 14px; margin-bottom: 22px; }
-.welcome .btn {
-  width: 100%; padding: 14px;
-  border: none; border-radius: 16px;
-  background: linear-gradient(180deg, #ffd54f, #ffb300);
-  color: #5d3700; font-size: 16px; font-weight: bold; letter-spacing: 3px;
-  cursor: pointer;
-  box-shadow: 0 5px 0 #c17900, 0 8px 14px rgba(0,0,0,.15);
-}
-.welcome .btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #c17900; }
 </style>
